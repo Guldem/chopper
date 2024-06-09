@@ -5,6 +5,7 @@ import 'package:chopper/src/authenticator.dart';
 import 'package:chopper/src/chain/call.dart';
 import 'package:chopper/src/constants.dart';
 import 'package:chopper/src/converters.dart';
+import 'package:chopper/src/devtools.dart';
 import 'package:chopper/src/interceptors/interceptor.dart';
 import 'package:chopper/src/request.dart';
 import 'package:chopper/src/response.dart';
@@ -44,6 +45,7 @@ base class ChopperClient {
       StreamController<Response>.broadcast();
 
   final bool _clientIsInternal;
+  static final ChopperDevTools devTools = ChopperDevTools();
 
   /// Creates and configures a [ChopperClient].
   ///
@@ -120,6 +122,7 @@ base class ChopperClient {
       for (final ChopperService service in services?.toSet() ?? [])
         service.definitionType: service..client = this
     };
+    _postInfo();
   }
 
   /// Retrieve any service included in the [ChopperClient]
@@ -344,6 +347,18 @@ base class ChopperClient {
   /// A stream of processed [Response]s, as in after all [Converter]s and
   /// [Interceptor]s have been run.
   Stream<Response> get onResponse => _responseController.stream;
+
+  void _postInfo() {
+    devTools.addClient(ClientInfo(
+      baseUrl: baseUrl.toString(),
+      httpClient: httpClient.toString(),
+      converter: converter?.runtimeType.toString(),
+      errorConverter: errorConverter?.runtimeType.toString(),
+      authenticator: authenticator?.runtimeType.toString(),
+      interceptors: interceptors.map((i) => i.runtimeType.toString()).toList(),
+      services: _services.keys.map((s) => s.toString()).toList(),
+    ));
+  }
 }
 
 ///
