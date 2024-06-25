@@ -5,12 +5,17 @@ import 'package:chopper/src/authenticator.dart';
 import 'package:chopper/src/chain/call.dart';
 import 'package:chopper/src/constants.dart';
 import 'package:chopper/src/converters.dart';
-import 'package:chopper/src/devtools.dart';
+import 'package:chopper/src/devtools/devtools.dart';
+import 'package:chopper/src/devtools/models/call_info.dart';
+import 'package:chopper/src/devtools/models/client_info.dart';
+import 'package:chopper/src/devtools/models/request_info.dart';
+import 'package:chopper/src/devtools/models/response_info.dart';
 import 'package:chopper/src/interceptors/interceptor.dart';
 import 'package:chopper/src/request.dart';
 import 'package:chopper/src/response.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
+import 'package:uuid/uuid.dart';
 
 /// ChopperClient is the main class of the Chopper API.
 ///
@@ -45,7 +50,8 @@ base class ChopperClient {
       StreamController<Response>.broadcast();
 
   final bool _clientIsInternal;
-  static final ChopperDevTools devTools = ChopperDevTools();
+  late final String _clientId = Uuid().v1();
+  late final ChopperDevTools? devTools = ChopperDevTools.instance;
 
   /// Creates and configures a [ChopperClient].
   ///
@@ -169,10 +175,14 @@ base class ChopperClient {
     ConvertRequest? requestConverter,
     ConvertResponse<BodyType>? responseConverter,
   }) async {
+    late final Request finalizedRequest;
     final call = Call(
       request: request,
       client: this,
-      requestCallback: _requestController.add,
+      requestCallback: (Request request) {
+        _requestController.add(request);
+        finalizedRequest = request;
+      },
     );
 
     final response = await call.execute<BodyType, InnerType>(
@@ -181,6 +191,8 @@ base class ChopperClient {
     );
 
     _responseController.add(response);
+
+    _addCall(call, finalizedRequest, response);
 
     return response;
   }
@@ -349,15 +361,27 @@ base class ChopperClient {
   Stream<Response> get onResponse => _responseController.stream;
 
   void _postInfo() {
-    devTools.addClient(ClientInfo(
-      baseUrl: baseUrl.toString(),
-      httpClient: httpClient.toString(),
-      converter: converter?.runtimeType.toString(),
-      errorConverter: errorConverter?.runtimeType.toString(),
-      authenticator: authenticator?.runtimeType.toString(),
-      interceptors: interceptors.map((i) => i.runtimeType.toString()).toList(),
-      services: _services.keys.map((s) => s.toString()).toList(),
-    ));
+    devTools?.addClient(
+      _clientId,
+      ClientInfo(
+        clientId: _clientId,
+        baseUrl: baseUrl.toString(),
+        httpClient: httpClient.toString(),
+        converter: converter?.runtimeType.toString(),
+        errorConverter: errorConverter?.runtimeType.toString(),
+        authenticator: authenticator?.runtimeType.toString(),
+        interceptors:
+            interceptors.map((i) => i.runtimeType.toString()).toList(),
+        services: _services.keys.map((s) => s.toString()).toList(),
+      ),
+    );
+  }
+
+  void _addCall<BodyType>(
+      Call call, Request request, Response<BodyType> response) {
+    // devTools?.addCall(
+    //
+    // );
   }
 }
 

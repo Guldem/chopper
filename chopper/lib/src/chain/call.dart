@@ -1,6 +1,7 @@
 import 'package:chopper/src/annotations.dart';
 import 'package:chopper/src/base.dart';
 import 'package:chopper/src/chain/interceptor_chain.dart';
+import 'package:chopper/src/devtools/models/call_info.dart';
 import 'package:chopper/src/interceptors/authenticator_interceptor.dart';
 import 'package:chopper/src/interceptors/http_call_interceptor.dart';
 import 'package:chopper/src/interceptors/interceptor.dart';
@@ -9,6 +10,7 @@ import 'package:chopper/src/interceptors/request_stream_interceptor.dart';
 import 'package:chopper/src/interceptors/response_converter_interceptor.dart';
 import 'package:chopper/src/request.dart';
 import 'package:chopper/src/response.dart';
+import 'package:uuid/uuid.dart';
 
 /// {@template Call}
 /// A single call to a HTTP endpoint. It holds the [request] and the [client].
@@ -20,6 +22,8 @@ class Call {
     required this.client,
     required this.requestCallback,
   });
+
+  late final String callId = Uuid().v1();
 
   /// Request to be executed.
   final Request request;
